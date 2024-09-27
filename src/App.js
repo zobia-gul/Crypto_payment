@@ -10,16 +10,19 @@ import { CoinbaseWalletSDK } from '@coinbase/wallet-sdk';
 import WalletConnectProvider from "@walletconnect/web3-provider";
 
 function App() {
+  // State to control dialog visibility and wallet installation status
   const [open, setOpen] = useState(false);
   const [isMetaMaskInstalled, setIsMetaMaskInstalled] = useState(false);
   const [coinbaseInstalled, setCoinbaseInstalled] = useState(false);
 
-  //To check automatically that wallet(coinbase and metamask) is installed or not
+  // useEffect to check if MetaMask and Coinbase wallets are installed on component mount
   useEffect(() => {
     detectMetamask();
+    const isCoinbaseInstalled = detectCoinbase();
+    setCoinbaseInstalled(isCoinbaseInstalled);
   }, []);
 
-  // Function to detect MetaMask
+  // Function to detect if MetaMask is installed
   const detectMetamask = () => {
     if (typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
       setIsMetaMaskInstalled(true);
@@ -28,19 +31,18 @@ function App() {
     }
   };
 
-  // Function to detect Coinbase Wallet
+  // Function to detect if Coinbase Wallet is installed
   const detectCoinbase = () => {
     const coinbaseWallet = new CoinbaseWalletSDK({
       appName: 'MyCryptoApp',
       appLogoUrl: 'https://example.com/logo.png',
       darkMode: false,
     });
-    // Attempt to make a provider and check if it exists
     const ethereum = coinbaseWallet.makeWeb3Provider();
     return ethereum !== null;
   };
 
-  // Handle Metamask payment
+  // Handle payment using MetaMask wallet
   const handleMetamaskPayment = async () => {
     if (typeof window.ethereum !== 'undefined') {
       try {
@@ -60,7 +62,7 @@ function App() {
     }
   };
 
-  // Handle Coinbase payment
+  // Handle payment using Coinbase Wallet
   const handleCoinbasePayment = async () => {
     const coinbaseWallet = new CoinbaseWalletSDK({
       appName: 'MyCryptoApp',
@@ -69,9 +71,9 @@ function App() {
     });
 
     const ethereum = coinbaseWallet.makeWeb3Provider();
-    
+
     try {
-      await ethereum.enable(); // Opens the Coinbase Wallet UI
+      await ethereum.enable(); // Opens Coinbase Wallet UI
       const provider = new ethers.providers.Web3Provider(ethereum);
       const signer = provider.getSigner();
       const tx = { to: 'RECIPIENT_ADDRESS', value: ethers.utils.parseEther('0.01') };
@@ -84,13 +86,7 @@ function App() {
     }
   };
 
-  // Check if Coinbase Wallet is installed on component mount
-  useEffect(() => {
-    const isCoinbaseInstalled = detectCoinbase();
-    setCoinbaseInstalled(isCoinbaseInstalled);
-  }, []);
-
-  // Handle WalletConnect payment
+  // Handle payment using WalletConnect
   const handleWalletConnectPayment = async () => {
     const provider = new WalletConnectProvider({
       infuraId: "YOUR_INFURA_ID", // Replace with your Infura Project ID
@@ -100,12 +96,7 @@ function App() {
       await provider.enable();
       const web3Provider = new ethers.providers.Web3Provider(provider);
       const signer = web3Provider.getSigner();
-
-      const tx = {
-        to: 'RECIPIENT_ADDRESS',
-        value: ethers.utils.parseEther('0.01')
-      };
-
+      const tx = { to: 'RECIPIENT_ADDRESS', value: ethers.utils.parseEther('0.01') };
       const transactionResponse = await signer.sendTransaction(tx);
       console.log('WalletConnect transaction sent:', transactionResponse);
       alert('WalletConnect transaction sent!');
@@ -115,65 +106,71 @@ function App() {
     }
   };
 
-  // Open wallet dialog
+  // Open dialog for wallet selection
   const handleClickOpen = () => {
     setOpen(true);
   };
 
-  // Close wallet dialog
+  // Close dialog
   const handleClose = () => {
     setOpen(false);
   };
 
   return (
     <div className="App">
+      {/* Pay button to trigger wallet dialog */}
       <Button variant="contained" color="primary" onClick={handleClickOpen}>
         Pay
       </Button>
-  
+
+      {/* Wallet connection dialog */}
       <Dialog
         open={open}
-        onClose={handleClose} // Close dialog normally
+        onClose={(event, reason) => {
+          if (reason !== 'backdropClick') {
+            handleClose();
+          }
+        }}
         PaperProps={{
           style: {
-            maxHeight: '80vh', // Set a maximum height for the dialog
-            overflow: 'auto', // Enable scrolling if content overflows
-            position: 'relative', // Ensure positioning context for close button
+            maxHeight: '80vh',
+            overflow: 'auto',
+            position: 'relative',
           },
         }}
+        BackdropProps={{ style: { pointerEvents: 'none' } }} // Disable backdrop click
       >
+        {/* Dialog title with close button */}
         <DialogTitle>
           Connect your wallet
           <IconButton
             aria-label="close"
             onClick={handleClose}
             style={{
-              position: 'absolute', // Correct position property to absolute
-              right: '12px', // Adjust position from the right
-              top: '10px', // Adjust position from the top
-              zIndex: 1, // Ensure it appears above other elements
-              background: 'rgba(255, 0, 0, 0.7)', // Matte red background
-              color: 'white', // White cross sign
-              borderRadius: '50%', // Circle shape
-              width: '15px', // Smaller width for the circular button
-              height: '15px', // Smaller height for the circular button
-              display: 'flex', // Center the icon
-              alignItems: 'center', // Center vertically
-              justifyContent: 'center', // Center horizontally
-              transition: 'background 0.3s', // Smooth transition for hover effects
+              position: 'absolute',
+              right: '12px',
+              top: '10px',
+              zIndex: 1,
+              background: 'rgba(255, 0, 0, 0.7)',
+              color: 'white',
+              borderRadius: '50%',
+              width: '15px',
+              height: '15px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background 0.3s',
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 0, 0, 0.9)'; // Darker red on hover
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 0, 0, 0.7)'; // Reset on leave
-            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 0, 0, 0.9)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 0, 0, 0.7)'; }}
           >
-            <CloseIcon fontSize="small" style={{ fontSize: '14px' }} /> {/* Smaller cross sign */}
+            <CloseIcon fontSize="small" style={{ fontSize: '14px' }} />
           </IconButton>
         </DialogTitle>
-  
+
+        {/* Wallet selection content */}
         <DialogContent>
+          {/* Metamask payment option */}
           {isMetaMaskInstalled ? (
             <Button
               variant="outlined"
@@ -181,7 +178,7 @@ function App() {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'flex-start', // Aligns the content to the left
+                justifyContent: 'flex-start',
                 marginTop: '10px',
                 width: '100%',
               }}
@@ -196,7 +193,7 @@ function App() {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'flex-start', // Aligns the content to the left
+                justifyContent: 'flex-start',
                 marginTop: '10px',
                 width: '100%',
               }}
@@ -205,29 +202,31 @@ function App() {
               Install MetaMask
             </Button>
           )}
-  
+
+          {/* Coinbase payment option */}
           <Button
             variant="outlined"
             onClick={handleCoinbasePayment}
             style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'flex-start', // Aligns the content to the left
+              justifyContent: 'flex-start',
               marginTop: '10px',
               width: '100%',
             }}
           >
             <img src={CoinbaseLogo} alt="Coinbase" width="30" style={{ marginRight: '10px' }} />
-            {coinbaseInstalled ? 'Coinbase Wallet' : 'Install Coinbase Wallet'}
+            {coinbaseInstalled ? 'Coinbase' : 'Install Coinbase Wallet'}
           </Button>
-  
+
+          {/* WalletConnect payment option */}
           <Button
             variant="outlined"
             onClick={handleWalletConnectPayment}
             style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'flex-start', // Aligns the content to the left
+              justifyContent: 'flex-start',
               marginTop: '10px',
               width: '100%',
             }}
@@ -239,9 +238,6 @@ function App() {
       </Dialog>
     </div>
   );
-  
-  
-  
 }
 
 export default App;
