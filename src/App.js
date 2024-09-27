@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { Button, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material';
+import { Button, Dialog, DialogTitle, DialogContent, IconButton, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import MetamaskLogo from './assets/metamask.png';
 import CoinbaseLogo from './assets/coinbase.png';
@@ -15,6 +15,9 @@ function App() {
   const [isMetaMaskInstalled, setIsMetaMaskInstalled] = useState(false);
   const [coinbaseInstalled, setCoinbaseInstalled] = useState(false);
 
+  // Hardcoded ETH amount for the time being (you can later fetch from a database)
+  const priceInEth = 0.01; // Example: 0.01 ETH
+  
   // useEffect to check if MetaMask and Coinbase wallets are installed on component mount
   useEffect(() => {
     detectMetamask();
@@ -170,6 +173,10 @@ function App() {
 
         {/* Wallet selection content */}
         <DialogContent>
+          {/* Display the ETH price to pay */}
+          <Typography variant="h6" gutterBottom>
+            Amount to pay: {priceInEth} ETH
+          </Typography>
           {/* Metamask payment option */}
           {isMetaMaskInstalled ? (
             <Button
